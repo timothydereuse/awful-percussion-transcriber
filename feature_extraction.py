@@ -2,7 +2,7 @@ import librosa as rosa
 import numpy as np
 
 
-def extract_features_from_audio(inp, sr, len_segments=2**11, n_segments=16, normalize=True):
+def extract_features_from_audio(inp, sr, len_segments=2**10, n_segments=16, normalize=True):
     n_fft = len_segments * 2
     hop = len_segments // 2
 
@@ -15,6 +15,9 @@ def extract_features_from_audio(inp, sr, len_segments=2**11, n_segments=16, norm
         extend = (len_segments * n_segments) - len(inp)
         inp = np.concatenate([inp, np.zeros(extend)])
 
+    # spectrogram = np.abs(rosa.stft(inp, n_fft=n_fft, hop_length=hop))
+    polys = rosa.feature.spectral.poly_features(inp, sr, hop_length=hop, order=2)
+
     # comment out lines to exclude items from the featureset
     feats = {
         'spec_centroid': rosa.feature.spectral_centroid(inp, sr, n_fft=n_fft, hop_length=hop),
@@ -22,6 +25,9 @@ def extract_features_from_audio(inp, sr, len_segments=2**11, n_segments=16, norm
          # 'spec_bandwidth': rosa.feature.spectral_bandwidth(inp, sr, n_fft=n_fft, hop_length=hop),
          # 'spec_flatness': rosa.feature.spectral_flatness(inp, n_fft=n_fft, hop_length=hop),
          # 'spec_rolloff': rosa.feature.spectral_rolloff(inp, sr, n_fft=n_fft, hop_length=hop),
+        'poly_features_0': polys[0],
+        'poly_features_1': polys[1],
+        'poly_features_2': polys[2],
         'rms': rosa.feature.rms(inp, frame_length=n_fft, hop_length=hop),
     }
 
