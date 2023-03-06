@@ -15,7 +15,7 @@ def extract_features_for_embedding(inp, sr, target_sr=22050, max_length=1, hop=5
 
     # normalize sound before feature extraction
     if max(crop_inp) > 0:
-        crop_inp = np.clip(crop_inp / max(crop_inp), 0, 1)
+        crop_inp = np.clip(crop_inp / max(crop_inp), -1, 1)
 
     # spectrogram = rosa.pseudo_cqt(crop_inp, target_sr, hop_length=hop, n_bins=42)
     n_fft = 1024

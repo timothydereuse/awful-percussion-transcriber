@@ -5,16 +5,19 @@ import dloader as dl
 import triplet_loss_net as tln
 import numpy as np
 
-dset_fname = 'dataset_groups.h5'
+dset_fname = 'dataset_groups_aug.h5'
 epochs = 50
 
 dataset = dl.TripletDrumsDataset(dset_fname)
-dloader = DataLoader(dataset, batch_size=50)
-model = tln.EmbeddingNetwork(dataset.dim, 32)
+dloader = DataLoader(dataset, batch_size=500)
+model = tln.EmbeddingNetwork(dataset.dim, 64)
+total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+print(f'created model with {total_params} params.')
 
 criterion = torch.nn.TripletMarginLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0001, max_lr=0.1, mode='triangular2', step_size_up=200, cycle_momentum=False)
+scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0001, max_lr=0.01, mode='triangular2', step_size_up=200, cycle_momentum=False)
 
 model.train()
 model.float()
