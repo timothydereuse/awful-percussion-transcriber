@@ -19,21 +19,19 @@ ftypes = ['wav', 'aiff', 'aif', 'mp3', 'flac']     # only bother with files of t
 # path to target file - this will be sliced, and sound slices from the sources will be matched to it
 
 match_volume = True         # attempt to match the energy between each source slice and the slice its replacing
-pca_reduce_amt = 10          # strength of dimensionality reduction on extracted features. higher = messier
+pca_reduce_amt = 10         # strength of dimensionality reduction on extracted features. higher = messier
                             # categorization by the knn but more information included
 slice_threshold_secs = 6    # if a source is longer than this number of seconds, then slice it up before
                             # adding it to the pool of source audio clips
-length_limit_secs = 200      # if a source is longer than this number of seconds, then discard anything
+length_limit_secs = 200000  # if a source is longer than this number of seconds, then discard anything
                             # past this point so you don't accidentally slice up a 20 min file
-declick_amt = 7             # use a linear envelope of this many samples to declick slices.
 num_clusters = 5
 
-sound_fpath = r"C:\Users\Tim\Documents\MUSIC DATA\noize boyz\valek\pv_noise_EWDM.wav"
+sound_fpath = r"C:\Users\Tim\Documents\MUSIC DATA\noize boyz\valek\pv_noise_groove box.wav"
 timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M')
 target_short_name = sound_fpath.split('\\')[-1][:-4]
 out_fname = f'slicer{target_short_name}-{timestamp}.mid'   # output filename with timestamp
 poll_every = 50             # controls how often console output is produced when calculating features
-
 
 
 def get_soundfile(fname):
@@ -46,7 +44,8 @@ def get_soundfile(fname):
     s = s / (2 ** (bit_depth - 1))
     return s, sr
 
-def slice_long_sample(y, sr, declick_samples=15, length_limit=None, fname=''):
+
+def slice_long_sample(y, sr, declick_samples=4, length_limit=None, fname=''):
 
     if length_limit and (len(y) / sr) > length_limit:
         y = y[len(y) - (length_limit * sr // 2):len(y) + (length_limit * sr // 2)]
@@ -86,16 +85,18 @@ clustering = aggc.fit_predict(reduced)
 # optics = clust.DBSCAN()
 # clustering = optics.fit(reduced)
 
+# from sklearn.manifold import TSNE
+# X_embedded = TSNE(n_components=2, learning_rate='auto', init='random', perplexity=10).fit_transform(reduced)
+# import matplotlib.pyplot as plt
+# plt.scatter(X_embedded[:, 0], X_embedded[:, 1], s=50, alpha=0.8)
+
 from mido import Message, MidiFile, MidiTrack
-
-
 mid = MidiFile()
 track = MidiTrack()
 mid.tracks.append(track)
 track.append(Message('program_change', program=12, time=0))
 
 s_to_t = (mid.ticks_per_beat / sr) * (100 / 60)
-
 
 def add_note(tr, note, vel, dur):
     tr.append(Message('note_on', note=note, velocity=vel, time=0))
