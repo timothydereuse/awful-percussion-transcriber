@@ -6,7 +6,7 @@ class EmbeddingNetwork(nn.Module):
     def __init__(self, inp_dim, emb_dim=64):
         super(EmbeddingNetwork, self).__init__()
 
-        l1_dim = 512
+        l1_dim = 256
         l2_dim = 128
 
         self.fc = nn.Sequential(

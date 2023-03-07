@@ -23,7 +23,7 @@ def get_soundfile(fname):
 
 class AudioAugmenter():
 
-    def __init__(self, noise_file, num_active_files=10, switch_after=15):
+    def __init__(self, noise_file, num_active_files=10, switch_after=25):
         with open(noise_file) as file:
             self.files = [line.rstrip().strip('"') for line in file]
             self.counter = 0
@@ -43,9 +43,17 @@ class AudioAugmenter():
             choose_noise = np.random.choice(self.active_files)
             if len(choose_noise) <= tar_len:
                 choose_noise = np.concatenate([choose_noise, np.zeros(tar_len)])
-            start = np.random.randint(0, len(choose_noise) - tar_len)
-            end = start + tar_len
-            snippet = choose_noise[start:end]
+
+            snippet = np.zeros(1)
+            counter = 0
+            while max(snippet) == 0:
+                start = np.random.randint(0, len(choose_noise) - tar_len)
+                end = start + tar_len
+                snippet = choose_noise[start:end]
+                counter += 1
+                if counter == 50:
+                    snippet = np.random.uniform(-1, 1, tar_len)
+
             amt = np.random.uniform(min_amt, max_amt)
             augmented = inp + (snippet * amt * max_inp / np.max(snippet))
             res.append(augmented)
@@ -63,11 +71,11 @@ class AudioAugmenter():
 # write('test7.wav', sr, out)
 
 groups_file = "supervised_groups.txt"
-processed_file = "./dataset_groups_aug.h5"
-max_per_group = 5
-num_augs = 3
+processed_file = "./dataset_groups_big.h5"
+max_per_group = 128
+num_augs = 4
 min_amt = 0.1
-max_amt = 0.25
+max_amt = 0.5
 aa = AudioAugmenter('noise_augs.txt')
 
 groups = []
@@ -86,11 +94,12 @@ for pair in groups:
     for fpath in fpaths:
         fpath = fpath.strip('" ')
         dir_wavs = os.listdir(fpath)
-        dir_wavs = [os.path.join(fpath, x) for x in dir_wavs if x[-4:] in ['.wav', '.WAV', '.aif']]
+        dir_wavs = [os.path.join(fpath, x) for x in dir_wavs if (x[-4:] in ['.wav', '.WAV', '.aif']) or (x[-3:] == '.wv')]
         wavs.extend(dir_wavs)
 
     if mod:
         wavs = [x for x in wavs if mod in x]   
+    np.random.shuffle(wavs)
     wavs = wavs[:max_per_group]
     group_files.append(wavs)
 
@@ -101,13 +110,18 @@ for i, g in enumerate(group_files):
 
     for s in g:
         print(s)
-        x, sr = get_soundfile(s)
+
+        try:
+            x, sr = get_soundfile(s)
+        except Exception:
+             print(f'failed {s}, skipping')
+             continue
 
         augmented = aa.augment_file(x, num_augs=num_augs, min_amt=min_amt, max_amt=max_amt)
 
         for sound in ([x] + augmented):
             try:
-                feat = extract_features_for_embedding(sound, sr)
+                feat = extract_features_for_embedding(sound, sr, hop=256)
             except librosa.ParameterError:
                 print(f'failed {s}, skipping')
                 continue

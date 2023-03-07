@@ -2,7 +2,7 @@ import librosa as rosa
 import numpy as np
 
 
-def extract_features_for_embedding(inp, sr, target_sr=22050, max_length=1, hop=512):
+def extract_features_for_embedding(inp, sr, target_sr=22050, max_length=1, hop=256):
 
     inp = rosa.resample(inp, sr, target_sr)
 
@@ -18,7 +18,7 @@ def extract_features_for_embedding(inp, sr, target_sr=22050, max_length=1, hop=5
         crop_inp = np.clip(crop_inp / max(crop_inp), -1, 1)
 
     # spectrogram = rosa.pseudo_cqt(crop_inp, target_sr, hop_length=hop, n_bins=42)
-    n_fft = 1024
+    n_fft = 512
 
     spec_mag = np.abs(rosa.stft(crop_inp, n_fft=n_fft, hop_length=hop))
     polys = rosa.feature.spectral.poly_features(sr=sr, S=spec_mag, hop_length=hop, order=2)
@@ -30,11 +30,11 @@ def extract_features_for_embedding(inp, sr, target_sr=22050, max_length=1, hop=5
         rosa.feature.spectral_bandwidth(sr=sr, S=spec_mag, n_fft=n_fft, hop_length=hop)[0],
         rosa.feature.spectral_flatness(S=spec_mag, n_fft=n_fft, hop_length=hop)[0],
         rosa.feature.spectral_rolloff(sr=sr, S=spec_mag, n_fft=n_fft, hop_length=hop)[0],
-        # polys[1],
-        # polys[2],
+        polys[1],
+        polys[2],
         rosa.feature.rms(S=spec_mag, frame_length=n_fft, hop_length=hop)[0]
     ]
-    all_feats = np.concatenate(feats)
+    all_feats = np.concatenate(feats).astype(float)
 
     return all_feats
 
